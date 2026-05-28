@@ -88,6 +88,28 @@ postSchema.index({ createdAt: -1 });
 
 const Post = mongoose.model("Post", postSchema);
 
+const analyticsSchema = new mongoose.Schema({
+
+    type: {
+        type: String,
+        required: true
+    },
+
+    storeId: {
+        type: String,
+        required: true
+    },
+
+    source: {
+        type: String,
+        default: "unknown"
+    },
+
+    userAgent: String,
+
+}, { timestamps: true });
+
+const Analytics = mongoose.model("Analytics", analyticsSchema);
 /* =========================
    BASIC ROUTE
 ========================= */
@@ -410,6 +432,68 @@ app.put("/api/store/order/:id", async (req, res) => {
 app.put("/api/store/view/:id", async (req, res) => {
     await Store.findByIdAndUpdate(req.params.id, { $inc: { customerViews: 1 } });
     res.json({ success: true });
+});
+
+app.post("/api/analytics/track", async (req, res) => {
+
+    try {
+
+        const { type, storeId, source } = req.body;
+
+        if (!type || !storeId) {
+            return res.status(400).json({
+                success: false,
+                error: "Missing fields"
+            });
+        }
+
+        await Analytics.create({
+            type,
+            storeId,
+            source,
+            userAgent: req.headers["user-agent"]
+        });
+
+        res.json({ success: true });
+
+    } catch (err) {
+
+        console.log("Analytics error:", err);
+
+        res.status(500).json({ success: false });
+    }
+});
+
+app.get("/api/analytics/stats/:storeId", async (req, res) => {
+
+    try {
+
+        const { storeId } = req.params;
+
+        const stats = await Analytics.aggregate([
+
+            { $match: { storeId } },
+
+            {
+                $group: {
+                    _id: "$type",
+                    count: { $sum: 1 }
+                }
+            }
+
+        ]);
+
+        res.json({
+            success: true,
+            stats
+        });
+
+    } catch (err) {
+
+        console.log(err);
+
+        res.status(500).json({ success: false });
+    }
 });
 
 /* =========================
