@@ -494,18 +494,46 @@ app.get("/api/analytics/stats/:storeId", async (req, res) => {
     }
 });
 
-app.get("/:username", async (req, res) => {
+app.get("/api/store/username/:username", async (req, res) => {
+    try {
+        const store = await Store.findOne({
+            storeUsername: req.params.username
+        });
 
+        if (!store) {
+            return res.status(404).json({
+                success: false,
+                error: "Store not found"
+            });
+        }
+
+        return res.json({
+            success: true,
+            store
+        });
+
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ success: false });
+    }
+});
+
+app.get("/s/:username", async (req, res) => {
     const store = await Store.findOne({
-        storeUsername: req.params.username
+        storeUsername: req.params.username.toLowerCase()
     });
 
     if (!store) {
         return res.status(404).send("Store not found");
     }
 
-    // redirect to frontend domain later
-    const frontendURL = process.env.FRONTEND_URL || "http://localhost:5500";
+    await Store.findByIdAndUpdate(store._id, {
+        $inc: { customerViews: 1 }
+    });
+
+    const frontendURL =
+        process.env.FRONTEND_URL ||
+        "http://localhost:5500";
 
     return res.redirect(
         `${frontendURL}/view-store.html?id=${store._id}`
