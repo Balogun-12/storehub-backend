@@ -329,14 +329,42 @@ app.post("/api/post", async (req, res) => {
 app.get("/api/posts", async (req, res) => {
     try {
 
-        const posts = await Post.find({})
+        // 18 newest posts
+        const recentPosts = await Post.find({})
             .sort({ createdAt: -1 })
-            .limit(20);
+            .limit(18);
 
-        res.json({ success: true, posts });
+        // 7 random posts
+        const randomPosts = await Post.aggregate([
+            { $sample: { size: 7 } }
+        ]);
+
+        // Combine them
+        const combined = [
+            ...recentPosts,
+            ...randomPosts
+        ];
+
+        // Remove duplicates
+        const uniquePosts = Array.from(
+            new Map(
+                combined.map(post => [
+                    post._id.toString(),
+                    post
+                ])
+            ).values()
+        );
+
+        res.json({
+            success: true,
+            posts: uniquePosts
+        });
 
     } catch (err) {
-        res.status(500).json({ success: false });
+        console.log(err);
+        res.status(500).json({
+            success: false
+        });
     }
 });
 
