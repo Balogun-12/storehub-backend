@@ -177,9 +177,9 @@ app.get("/api/store/:id", async (req, res) => {
 app.get("/api/stores", async (req, res) => {
     try {
 
-        const stores = await Store.find({})
-            .sort({ createdAt: -1 })
-            .limit(6);
+        const stores = await Store.aggregate([
+            { $sample: { size: 2 } }
+        ]);
 
         return res.json({
             success: true,
