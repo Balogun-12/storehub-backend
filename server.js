@@ -171,6 +171,34 @@ app.get("/api/store/:id", async (req, res) => {
 });
 
 /* =========================
+   GET STORES
+========================= */
+
+app.get("/api/stores", async (req, res) => {
+    try {
+
+        const stores = await Store.find({})
+            .sort({ createdAt: -1 })
+            .limit(6);
+
+        return res.json({
+            success: true,
+            stores
+        });
+
+    } catch (err) {
+
+        console.log(err);
+
+        return res.status(500).json({
+            success: false,
+            error: "Server error"
+        });
+
+    }
+});
+
+/* =========================
    UPDATE STORE (SAFE)
 ========================= */
 
